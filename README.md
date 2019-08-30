@@ -1,4 +1,3 @@
 # Deep sea diver
 
-#### This game was bootstraped with project Phaser + ES6 + Webpack.
-
+attempt to make a diving game.
