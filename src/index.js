@@ -32,10 +32,12 @@ function preload() {
   });
 }
 
-var player;
-var cursors;
-var score = 0;
-var scoreText;
+let player;
+let cursors;
+
+let distanceText;
+let airText;
+let scoreText;
 
 function create() {
   this.cameras.main.backgroundColor.setTo(11, 89, 126);
@@ -51,7 +53,21 @@ function create() {
   player.setBounce(0.2);
   player.setCollideWorldBounds(true);
 
-  scoreText = this.add.text(16, 10, 'depth: 0 m', {
+  distanceText = this.add.text(16, 10, 'depth: 0 m', {
+    fontSize: '32px',
+    fill: '#000',
+    backgroundColor: '#FFF'
+  });
+  distanceText.setScrollFactor(0);
+
+  airText = this.add.text(16, 60, 'air: ' + air, {
+    fontSize: '32px',
+    fill: '#000',
+    backgroundColor: '#FFF'
+  });
+  airText.setScrollFactor(0);
+
+  scoreText = this.add.text(16, 110, 'record: 0 m', {
     fontSize: '32px',
     fill: '#000',
     backgroundColor: '#FFF'
@@ -90,7 +106,20 @@ function create() {
 let velocity = 0;
 let maxDepth = 0;
 let distance = 0;
+let airLimit = 20;
+let hasAirBoost = false;
+let airCapacity = 1000;
+let air = airCapacity;
+
 function update() {
+  if (air > 0) {
+    air -= 1;
+  } else {
+    player.setVelocityY(0);
+    player.anims.play('idle');
+    return;
+  }
+  airText.text = `air: ${air}`;
   if (cursors.up.isDown) {
     if (velocity > -500) {
       velocity -= 2;
@@ -119,7 +148,25 @@ function update() {
     player.anims.play('idle');
   }
   distance = Math.round((player.y - 40) / 100);
-  scoreText.text = `${distance}m`;
+  distanceText.text = `${distance}m`;
+
+  if (distance > maxDepth) {
+    maxDepth = distance;
+  }
+
+  //check air boost
+  if (distance >= airLimit && !hasAirBoost) {
+    hasAirBoost = true;
+    airLimit += 10;
+  }
+  if (player.y - 40 === 0) {
+    if (hasAirBoost) {
+      airCapacity += 200;
+      hasAirBoost = false;
+    }
+    air = airCapacity;
+    scoreText.text = `record: ${maxDepth}m`;
+  }
 }
 
 const game = new Phaser.Game(config);
