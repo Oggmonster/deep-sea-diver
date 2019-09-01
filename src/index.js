@@ -53,8 +53,10 @@ function create() {
 
   scoreText = this.add.text(16, 10, 'depth: 0 m', {
     fontSize: '32px',
-    fill: '#000'
+    fill: '#000',
+    backgroundColor: '#FFF'
   });
+  scoreText.setScrollFactor(0);
 
   this.cameras.main.startFollow(player, true);
 
@@ -116,9 +118,8 @@ function update() {
     player.setVelocityY(velocity);
     player.anims.play('idle');
   }
-  scoreText.y = player.y - 20;
-  distance = Math.round((player.y - 40) / 10);
-  scoreText.text = distance;
+  distance = Math.round((player.y - 40) / 100);
+  scoreText.text = `${distance}m`;
 }
 
 const game = new Phaser.Game(config);
