@@ -7,11 +7,7 @@ const dist = path.join(__dirname, '../dist');
 const dev = path.join(__dirname, '../dev');
 const ghpages = path.join(__dirname, '../gh-pages');
 
-const packageJSON = require('../package.json');
-
-const ghPagesAppName = packageJSON.homepage
-  ? packageJSON.homepage.split('/').pop()
-  : 'create-phaser-app';
+const ghPagesAppName = 'deep-sea-diver';
 
 console.log('app name', ghPagesAppName);
 
