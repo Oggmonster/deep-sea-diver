@@ -22,6 +22,8 @@ const config = {
 
 function preload() {
   this.load.image('sky', Images.Sky);
+  this.load.image('swim-bar', Images.SwimBar);
+  this.load.image('arrow', Images.Arrow);
   this.load.spritesheet('swimmer', Images.Swimmer, {
     frameWidth: 80,
     frameHeight: 80
@@ -38,12 +40,25 @@ let cursors;
 let distanceText;
 let airText;
 let scoreText;
+let arrow;
 
 function create() {
   this.cameras.main.backgroundColor.setTo(11, 89, 126);
 
   this.cameras.main.setBounds(0, 0, 800, 8024 * 2);
   this.physics.world.setBounds(0, 0, 800, 8024 * 2);
+
+  // graphics = this.add.graphics();
+
+  // graphics.lineGradientStyle(20, 0xff0000, 0xff0000, 0x0000ff, 0x0000ff, 2);
+  // graphics.lineBetween(600, 550, 200, 550);
+  // graphics.setScrollFactor(0);
+
+  var swimbar = this.add.image(200, 550, 'swim-bar');
+  swimbar.setScrollFactor(0);
+  arrow = this.add.image(35, 532, 'arrow');
+  arrow.setScrollFactor(0);
+
   this.add.image(400, -280, 'sky');
 
   player = this.physics.add.sprite(400, 5, 'swimmer');
@@ -67,7 +82,7 @@ function create() {
   });
   airText.setScrollFactor(0);
 
-  scoreText = this.add.text(16, 110, 'record: 0 m', {
+  scoreText = this.add.text(220, 500, 'record: 0 m', {
     fontSize: '32px',
     fill: '#000',
     backgroundColor: '#FFF'
@@ -108,8 +123,11 @@ let maxDepth = 0;
 let distance = 0;
 let airLimit = 20;
 let hasAirBoost = false;
-let airCapacity = 1000;
+let airCapacity = 10000;
 let air = airCapacity;
+let maxArrowPosition = 365;
+let minArrowPosition = 35;
+let arrowPosition = 35;
 
 function update() {
   if (air > 0) {
@@ -154,6 +172,21 @@ function update() {
     maxDepth = distance;
   }
 
+  if (air % 8 === 0) {
+    arrowPosition = arrow.x + getArrowJump(velocity);
+    if (arrowPosition < maxArrowPosition) {
+      arrow.x = arrowPosition;
+    } else {
+      arrow.x = minArrowPosition;
+    }
+  }
+
+  //yellow start 240 - 315
+  //green 272-290
+  //red 315 uppåt
+
+  scoreText.text = `${arrowPosition}`;
+
   //check air boost
   if (distance >= airLimit && !hasAirBoost) {
     hasAirBoost = true;
@@ -167,6 +200,24 @@ function update() {
     air = airCapacity;
     scoreText.text = `record: ${maxDepth}m`;
   }
+  
+}
+
+function getArrowJump(velocity) {
+  const absVelocity = velocity > 0 ? velocity : velocity * -1;
+  if (absVelocity < 100) {
+    return 1;
+  }
+  if (absVelocity < 200) {
+    return 2;
+  }
+  if (absVelocity < 300) {
+    return 3;
+  }
+  if (absVelocity < 500) {
+    return 4;
+  }
+  return 5;
 }
 
 const game = new Phaser.Game(config);
