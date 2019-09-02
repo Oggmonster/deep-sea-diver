@@ -9,7 +9,7 @@ const config = {
   physics: {
     default: 'arcade',
     arcade: {
-      gravity: { y: 10 },
+      gravity: { y: 5 },
       debug: false
     }
   },
@@ -39,8 +39,9 @@ let cursors;
 
 let distanceText;
 let airText;
-let scoreText;
+let speedText;
 let arrow;
+let highScoreText;
 
 function create() {
   this.cameras.main.backgroundColor.setTo(11, 89, 126);
@@ -48,15 +49,9 @@ function create() {
   this.cameras.main.setBounds(0, 0, 800, 8024 * 2);
   this.physics.world.setBounds(0, 0, 800, 8024 * 2);
 
-  // graphics = this.add.graphics();
-
-  // graphics.lineGradientStyle(20, 0xff0000, 0xff0000, 0x0000ff, 0x0000ff, 2);
-  // graphics.lineBetween(600, 550, 200, 550);
-  // graphics.setScrollFactor(0);
-
-  var swimbar = this.add.image(200, 550, 'swim-bar');
+  var swimbar = this.add.image(400, 450, 'swim-bar');
   swimbar.setScrollFactor(0);
-  arrow = this.add.image(35, 532, 'arrow');
+  arrow = this.add.image(350, 431, 'arrow');
   arrow.setScrollFactor(0);
 
   this.add.image(400, -280, 'sky');
@@ -68,26 +63,29 @@ function create() {
   player.setBounce(0.2);
   player.setCollideWorldBounds(true);
 
-  distanceText = this.add.text(16, 10, 'depth: 0 m', {
-    fontSize: '32px',
-    fill: '#000',
-    backgroundColor: '#FFF'
+  distanceText = this.add.text(400, 470, 'depth: 0 m', {
+    fontSize: '12px',
+    fill: '#fff'
   });
   distanceText.setScrollFactor(0);
 
-  airText = this.add.text(16, 60, 'air: ' + air, {
-    fontSize: '32px',
-    fill: '#000',
-    backgroundColor: '#FFF'
+  airText = this.add.text(470, 460, 'O2: ' + air, {
+    fontSize: '12px',
+    fill: '#fff'
   });
   airText.setScrollFactor(0);
 
-  scoreText = this.add.text(220, 500, 'record: 0 m', {
-    fontSize: '32px',
-    fill: '#000',
-    backgroundColor: '#FFF'
+  speedText = this.add.text(470, 443, 'record: 0 m', {
+    fontSize: '12px',
+    fill: '#fff'
   });
-  scoreText.setScrollFactor(0);
+  speedText.setScrollFactor(0);
+
+  highScoreText = this.add.text(400, 530, 'record: 0 m', {
+    fontSize: '12px',
+    fill: '#fff'
+  });
+  highScoreText.setScrollFactor(0);
 
   this.cameras.main.startFollow(player, true);
 
@@ -119,15 +117,16 @@ function create() {
 }
 
 let velocity = 0;
+let direction = 'DOWN';
 let maxDepth = 0;
 let distance = 0;
-let airLimit = 20;
+let airLimit = 5;
 let hasAirBoost = false;
-let airCapacity = 10000;
+let airCapacity = 1200;
 let air = airCapacity;
-let maxArrowPosition = 365;
-let minArrowPosition = 35;
-let arrowPosition = 35;
+let maxArrowPosition = 450;
+let minArrowPosition = 350;
+let arrowPosition = 350;
 
 function update() {
   if (air > 0) {
@@ -137,33 +136,35 @@ function update() {
     player.anims.play('idle');
     return;
   }
+
   airText.text = `air: ${air}`;
-  if (cursors.up.isDown) {
-    if (velocity > -500) {
-      velocity -= 2;
-    }
+  if (cursors.down.isDown) {
+    swim();
+    arrowPosition = minArrowPosition;
+    arrow.x = arrowPosition;
     player.setVelocityY(velocity);
+  }
+
+  if (cursors.up.isDown) {
+    direction = 'UP';
+    velocity = -5;
+    player.setVelocityY(velocity);
+  }
+
+  if (direction !== 'DOWN') {
     if (velocity < -300) {
       player.anims.play('fast-swim', true);
     } else {
       player.anims.play('swim', true);
     }
     player.angle = 75;
-  } else if (cursors.down.isDown) {
-    if (velocity < 500) {
-      velocity += 2;
-    }
-    player.setVelocityY(velocity);
+  } else {
     if (velocity > 300) {
       player.anims.play('fast-swim', true);
     } else {
       player.anims.play('swim', true);
     }
     player.angle = -105;
-  } else {
-    velocity = 5;
-    player.setVelocityY(velocity);
-    player.anims.play('idle');
   }
   distance = Math.round((player.y - 40) / 100);
   distanceText.text = `${distance}m`;
@@ -172,7 +173,7 @@ function update() {
     maxDepth = distance;
   }
 
-  if (air % 8 === 0) {
+  if (air % getArrowSpeed(velocity) === 0) {
     arrowPosition = arrow.x + getArrowJump(velocity);
     if (arrowPosition < maxArrowPosition) {
       arrow.x = arrowPosition;
@@ -181,43 +182,68 @@ function update() {
     }
   }
 
-  //yellow start 240 - 315
-  //green 272-290
-  //red 315 uppåt
-
-  scoreText.text = `${arrowPosition}`;
+  speedText.text = `${velocity}`;
 
   //check air boost
   if (distance >= airLimit && !hasAirBoost) {
     hasAirBoost = true;
-    airLimit += 10;
+    airLimit += 5;
   }
   if (player.y - 40 === 0) {
     if (hasAirBoost) {
-      airCapacity += 200;
+      airCapacity += 500;
       hasAirBoost = false;
     }
     air = airCapacity;
-    scoreText.text = `record: ${maxDepth}m`;
+    highScoreText.text = `record: ${maxDepth}m`;
+    direction = 'DOWN';
+    velocity = 5;
+    player.setVelocityY(velocity);
   }
-  
+}
+
+var base = 350;
+var fastSpeed = 50;
+var normalSpeed = 25;
+var badSpeed = 40;
+var greenStart = base + 72;
+var greenEnd = base + 79;
+var yellowStart = base + 62;
+var yellowEnd = base + 87;
+
+function swim() {
+  var isDown = direction === 'DOWN';
+
+  //yellow start 240 - 315
+  //green 272-290
+  //red 315 uppåt
+  //green
+  if (arrowPosition >= greenStart && arrowPosition <= greenEnd) {
+    velocity = isDown ? velocity + fastSpeed : velocity - fastSpeed;
+    return;
+  } else if (arrowPosition > yellowStart && arrowPosition < yellowEnd) {
+    velocity = isDown ? velocity + normalSpeed : velocity - normalSpeed;
+    return;
+  } else if (arrowPosition >= yellowEnd) {
+    velocity = isDown ? velocity - badSpeed : velocity + badSpeed;
+    return;
+  }
 }
 
 function getArrowJump(velocity) {
   const absVelocity = velocity > 0 ? velocity : velocity * -1;
-  if (absVelocity < 100) {
+  if (absVelocity < 300) {
     return 1;
   }
-  if (absVelocity < 200) {
+  return 2;
+}
+
+function getArrowSpeed(velocity) {
+  const absVelocity = velocity > 0 ? velocity : velocity * -1;
+  if (absVelocity < 100) {
     return 2;
   }
-  if (absVelocity < 300) {
-    return 3;
-  }
-  if (absVelocity < 500) {
-    return 4;
-  }
-  return 5;
+  return 1;
 }
 
 const game = new Phaser.Game(config);
