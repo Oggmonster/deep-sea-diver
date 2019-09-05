@@ -9,7 +9,7 @@ const config = {
   physics: {
     default: 'arcade',
     arcade: {
-      gravity: { y: 5 },
+      gravity: { y: 0 },
       debug: false
     }
   },
@@ -35,9 +35,14 @@ function preload() {
     frameWidth: 80,
     frameHeight: 80
   });
+  this.load.spritesheet('bubbles', Images.Bubbles, {
+    frameWidth: 23,
+    frameHeight: 40
+  });
 }
 
 let player;
+let bubbles;
 let cursors;
 
 let distanceText;
@@ -68,12 +73,9 @@ function create() {
   let bg3 = this.add.image(400, 16165, 'bg3');
   bg3.flipY = true;
 
-  // let scaleX = this.cameras.main.width / bg.width;
-  // let scaleY = this.cameras.main.height / bg.height;
-  // let scale = Math.max(scaleX, scaleY);
-  // image.setScale(scale);
-  // this.add.image(400, 1716, 'bg2');
-  // this.add.image(400, 3469, 'bg3');
+  bubbles = this.physics.add.sprite(200, 200, 'bubbles');
+  bubbles.flipY = true;
+
 
   var swimbar = this.add.image(400, 450, 'swim-bar');
   swimbar.setScrollFactor(0);
@@ -137,6 +139,13 @@ function create() {
     repeat: -1
   });
 
+  this.anims.create({
+    key: 'bubble',
+    frames: this.anims.generateFrameNumbers('bubbles', { start: 4, end: 0 }),
+    frameRate: 3,
+    repeat: -1
+  });
+
   cursors = this.input.keyboard.createCursorKeys();
 }
 
@@ -146,7 +155,7 @@ let maxDepth = 0;
 let distance = 0;
 let airLimit = 5;
 let hasAirBoost = false;
-let airCapacity = 120000;
+let airCapacity = 1000;
 let air = airCapacity;
 let maxArrowPosition = 450;
 let minArrowPosition = 350;
@@ -191,6 +200,7 @@ function update() {
     }
   }
 
+  bubbles.anims.play('bubble', true);
   if (direction !== 'DOWN') {
     if (velocity < -300) {
       player.anims.play('fast-swim', true);
@@ -239,7 +249,7 @@ function update() {
   }
   if (player.y - 40 === 0) {
     if (hasAirBoost) {
-      airCapacity += 500;
+      airCapacity += 200;
       hasAirBoost = false;
     }
     air = airCapacity;
