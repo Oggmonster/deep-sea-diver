@@ -24,6 +24,9 @@ function preload() {
   this.load.image('sky', Images.Sky);
   this.load.image('swim-bar', Images.SwimBar);
   this.load.image('arrow', Images.Arrow);
+  this.load.image('bg1', Images.Bg1);
+  this.load.image('bg2', Images.Bg2);
+  this.load.image('bg3', Images.Bg3);
   this.load.spritesheet('swimmer', Images.Swimmer, {
     frameWidth: 80,
     frameHeight: 80
@@ -49,12 +52,33 @@ function create() {
   this.cameras.main.setBounds(0, 0, 800, 8024 * 2);
   this.physics.world.setBounds(0, 0, 800, 8024 * 2);
 
+  this.add.image(400, -270, 'sky');
+  this.add.image(400, 875, 'bg1');
+  let bg1b = this.add.image(400, 2585, 'bg1');
+  bg1b.flipY = true;
+  this.add.image(400, 4295, 'bg1');
+  let bg1c = this.add.image(400, 6005, 'bg1');
+  bg1c.flipY = true;
+  this.add.image(400, 7715, 'bg1');
+  this.add.image(400, 9425, 'bg2');
+  let bg2b = this.add.image(400, 11178, 'bg2');
+  bg2b.flipY = true;
+  this.add.image(400, 12931, 'bg2');
+  this.add.image(400, 14593, 'bg3');
+  let bg3 = this.add.image(400, 16165, 'bg3');
+  bg3.flipY = true;
+
+  // let scaleX = this.cameras.main.width / bg.width;
+  // let scaleY = this.cameras.main.height / bg.height;
+  // let scale = Math.max(scaleX, scaleY);
+  // image.setScale(scale);
+  // this.add.image(400, 1716, 'bg2');
+  // this.add.image(400, 3469, 'bg3');
+
   var swimbar = this.add.image(400, 450, 'swim-bar');
   swimbar.setScrollFactor(0);
   arrow = this.add.image(350, 431, 'arrow');
   arrow.setScrollFactor(0);
-
-  this.add.image(400, -280, 'sky');
 
   player = this.physics.add.sprite(400, 5, 'swimmer');
   player.angle = 75;
@@ -122,11 +146,14 @@ let maxDepth = 0;
 let distance = 0;
 let airLimit = 5;
 let hasAirBoost = false;
-let airCapacity = 1200;
+let airCapacity = 120000;
 let air = airCapacity;
 let maxArrowPosition = 450;
 let minArrowPosition = 350;
 let arrowPosition = 350;
+let isArrowDirectionRight = true;
+let maxX = 700;
+let minX = 100;
 
 function update() {
   if (air > 0) {
@@ -140,15 +167,28 @@ function update() {
   airText.text = `air: ${air}`;
   if (cursors.down.isDown) {
     swim();
-    arrowPosition = minArrowPosition;
-    arrow.x = arrowPosition;
     player.setVelocityY(velocity);
   }
 
   if (cursors.up.isDown) {
-    direction = 'UP';
-    velocity = -5;
+    if (direction === 'DOWN') {
+      velocity = -5;
+      direction = 'UP';
+    }
+    swim();
     player.setVelocityY(velocity);
+  }
+
+  if (cursors.left.isDown) {
+    if (player.x > minX) {
+      player.x = player.x - 2;
+    }
+  }
+
+  if (cursors.right.isDown) {
+    if (player.x < maxX) {
+      player.x = player.x + 2;
+    }
   }
 
   if (direction !== 'DOWN') {
@@ -166,7 +206,7 @@ function update() {
     }
     player.angle = -105;
   }
-  distance = Math.round((player.y - 40) / 100);
+  distance = Math.round((player.y - 40) / 50);
   distanceText.text = `${distance}m`;
 
   if (distance > maxDepth) {
@@ -174,11 +214,19 @@ function update() {
   }
 
   if (air % getArrowSpeed(velocity) === 0) {
-    arrowPosition = arrow.x + getArrowJump(velocity);
-    if (arrowPosition < maxArrowPosition) {
-      arrow.x = arrowPosition;
+    arrowPosition = arrow.x + (isArrowDirectionRight ? 1 : -1);
+    if (isArrowDirectionRight) {
+      if (arrowPosition < maxArrowPosition) {
+        arrow.x = arrowPosition;
+      } else {
+        isArrowDirectionRight = false;
+      }
     } else {
-      arrow.x = minArrowPosition;
+      if (arrowPosition > minArrowPosition) {
+        arrow.x = arrowPosition;
+      } else {
+        isArrowDirectionRight = true;
+      }
     }
   }
 
@@ -206,27 +254,61 @@ var base = 350;
 var fastSpeed = 50;
 var normalSpeed = 25;
 var badSpeed = 40;
-var greenStart = base + 72;
-var greenEnd = base + 79;
-var yellowStart = base + 62;
-var yellowEnd = base + 87;
+
+var greenRightStart = base + 87;
+var greenRightEnd = base + 92;
+var yellowRightStart = base + 83;
+var yellowRightEnd = base + 96;
+
+function checkRightArrowPostion(isDown) {
+  if (arrowPosition >= greenRightStart && arrowPosition <= greenRightEnd) {
+    velocity = isDown ? velocity + fastSpeed : velocity - fastSpeed;
+    return true;
+  } else if (
+    arrowPosition >= yellowRightStart &&
+    arrowPosition <= yellowRightEnd
+  ) {
+    velocity = isDown ? velocity + normalSpeed : velocity - normalSpeed;
+    return true;
+  } else if (arrowPosition > yellowRightEnd) {
+    velocity = isDown ? velocity - badSpeed : velocity + badSpeed;
+    return true;
+  }
+  return false;
+}
+
+var greenLeftStart = base + 9;
+var greenLeftEnd = base + 14;
+var yellowLeftStart = base + 5;
+var yellowLeftEnd = base + 18;
+
+function checkLeftArrowPostion(isDown) {
+  if (arrowPosition >= greenLeftStart && arrowPosition <= greenLeftEnd) {
+    velocity = isDown ? velocity + fastSpeed : velocity - fastSpeed;
+    return true;
+  } else if (
+    arrowPosition >= yellowLeftStart &&
+    arrowPosition <= yellowLeftEnd
+  ) {
+    velocity = isDown ? velocity + normalSpeed : velocity - normalSpeed;
+    return true;
+  } else if (arrowPosition < yellowLeftStart) {
+    velocity = isDown ? velocity - badSpeed : velocity + badSpeed;
+    return true;
+  }
+  return false;
+}
 
 function swim() {
-  var isDown = direction === 'DOWN';
-
-  //yellow start 240 - 315
-  //green 272-290
-  //red 315 uppåt
-  //green
-  if (arrowPosition >= greenStart && arrowPosition <= greenEnd) {
-    velocity = isDown ? velocity + fastSpeed : velocity - fastSpeed;
-    return;
-  } else if (arrowPosition > yellowStart && arrowPosition < yellowEnd) {
-    velocity = isDown ? velocity + normalSpeed : velocity - normalSpeed;
-    return;
-  } else if (arrowPosition >= yellowEnd) {
-    velocity = isDown ? velocity - badSpeed : velocity + badSpeed;
-    return;
+  const isDown = direction === 'DOWN';
+  let isHit = false;
+  if (isArrowDirectionRight) {
+    isHit = checkRightArrowPostion(isDown);
+  } else {
+    isHit = checkLeftArrowPostion(isDown);
+  }
+  if (isHit) {
+    isArrowDirectionRight = !isArrowDirectionRight;
   }
 }
 
