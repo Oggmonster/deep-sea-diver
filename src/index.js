@@ -27,6 +27,10 @@ function preload() {
   this.load.image('bg1', Images.Bg1);
   this.load.image('bg2', Images.Bg2);
   this.load.image('bg3', Images.Bg3);
+  this.load.image('sha1', Images.Sha1);
+  this.load.image('sha2', Images.Sha2);
+  this.load.image('sha3', Images.Sha3);
+  this.load.image('sha4', Images.Sha4);
   this.load.spritesheet('swimmer', Images.Swimmer, {
     frameWidth: 80,
     frameHeight: 80
@@ -42,14 +46,14 @@ function preload() {
 }
 
 let player;
-let bubbles;
 let cursors;
 
 let distanceText;
 let airText;
-let speedText;
 let arrow;
 let highScoreText;
+let bubbleGroup;
+let sharks;
 
 function create() {
   this.cameras.main.backgroundColor.setTo(11, 89, 126);
@@ -73,41 +77,82 @@ function create() {
   let bg3 = this.add.image(400, 16165, 'bg3');
   bg3.flipY = true;
 
-  bubbles = this.physics.add.sprite(200, 200, 'bubbles');
-  bubbles.flipY = true;
-
-
-  var swimbar = this.add.image(400, 450, 'swim-bar');
-  swimbar.setScrollFactor(0);
-  arrow = this.add.image(350, 431, 'arrow');
-  arrow.setScrollFactor(0);
-
-  player = this.physics.add.sprite(400, 5, 'swimmer');
+  player = this.physics.add.sprite(400, 40, 'swimmer');
   player.angle = 75;
   player.flipX = true;
 
   player.setBounce(0.2);
   player.setCollideWorldBounds(true);
+  player.body.setSize(20, 40);
 
-  distanceText = this.add.text(400, 470, 'depth: 0 m', {
+  this.anims.create({
+    key: 'bubble',
+    frames: this.anims.generateFrameNumbers('bubbles', { start: 4, end: 0 }),
+    frameRate: 3,
+    repeat: -1
+  });
+
+  bubbleGroup = this.physics.add.group();
+  for (var i = 0; i < 50; i++) {
+    var x = Phaser.Math.RND.between(5, 795);
+    var y = Phaser.Math.RND.between(80, 16000);
+    var bubble = this.physics.add.sprite(x, y, 'bubbles').play('bubble');
+    bubble.flipY = true;
+    bubbleGroup.add(bubble);
+  }
+
+  this.anims.create({
+    key: 'shark1',
+    frames: [
+      { key: 'sha1' },
+      { key: 'sha2' },
+      { key: 'sha3' },
+      { key: 'sha4' }
+    ],
+    frameRate: 6,
+    repeat: -1
+  });
+
+  sharks = this.physics.add.group();
+  for (var i = 0; i < 15; i++) {
+    var x = Phaser.Math.RND.between(5, 795);
+    var y = Phaser.Math.RND.between(300, 16000);
+    var shark = this.physics.add
+      .sprite(x, y, 'sha1')
+      .play('shark1')
+      .setScale(0.5);
+    if (i % 2 === 0) {
+      shark.flipX = true;
+      shark.direction = 'right';
+    } else {
+      shark.direction = 'left';
+    }
+    shark.setBounce(0.5);
+    shark.setCollideWorldBounds(true);
+    sharks.add(shark);
+  }
+
+  var swimbar = this.add.image(400, 550, 'swim-bar');
+  swimbar.setScrollFactor(0);
+  arrow = this.add.image(350, 531, 'arrow');
+  arrow.setScrollFactor(0);
+
+  this.physics.add.overlap(player, bubbleGroup, collectBubble, null, this);
+  this.physics.add.overlap(player, sharks, sharkAttack, null, this);
+
+  distanceText = this.add.text(350, 570, 'depth: 0 m', {
     fontSize: '12px',
     fill: '#fff'
   });
   distanceText.setScrollFactor(0);
 
-  airText = this.add.text(470, 460, 'O2: ' + air, {
+  airText = this.add.text(400, 570, 'O2: ' + air, {
     fontSize: '12px',
     fill: '#fff'
   });
   airText.setScrollFactor(0);
 
-  speedText = this.add.text(470, 443, 'record: 0 m', {
-    fontSize: '12px',
-    fill: '#fff'
-  });
-  speedText.setScrollFactor(0);
-
-  highScoreText = this.add.text(400, 530, 'record: 0 m', {
+  highScoreText = this.add.text(100, 570, 'record: 0 m', {
     fontSize: '12px',
     fill: '#fff'
   });
@@ -139,13 +184,6 @@ function create() {
     repeat: -1
   });
 
-  this.anims.create({
-    key: 'bubble',
-    frames: this.anims.generateFrameNumbers('bubbles', { start: 4, end: 0 }),
-    frameRate: 3,
-    repeat: -1
-  });
-
   cursors = this.input.keyboard.createCursorKeys();
 }
 
@@ -161,10 +199,42 @@ let maxArrowPosition = 450;
 let minArrowPosition = 350;
 let arrowPosition = 350;
 let isArrowDirectionRight = true;
-let maxX = 700;
-let minX = 100;
+let maxX = 795;
+let minX = 5;
+
+function collectBubble(player, bubble) {
+  bubble.disableBody(true, true);
+  air += 500;
+}
+
+function sharkAttack(player, shark) {
+  shark.disableBody(true, true);
+  velocity = 0;
+  player.setVelocityY(velocity);
+  player.setTint(0xff0000);
+  air -= 1000;
+}
+
+function moveSharks(shark) {
+  if (shark.direction === 'left') {
+    if (shark.x > minX) {
+      shark.x -= 2;
+    } else {
+      shark.direction = 'right';
+      shark.flipX = true;
+    }
+  } else {
+    if (shark.x < maxX) {
+      shark.x += 2;
+    } else {
+      shark.direction = 'left';
+      shark.flipX = false;
+    }
+  }
+}
 
 function update() {
+  airText.text = `air: ${air}`;
   if (air > 0) {
     air -= 1;
   } else {
@@ -172,12 +242,12 @@ function update() {
     player.anims.play('idle');
     return;
   }
-
-  airText.text = `air: ${air}`;
   if (cursors.down.isDown) {
     swim();
     player.setVelocityY(velocity);
   }
+
+  sharks.children.each(moveSharks);
 
   if (cursors.up.isDown) {
     if (direction === 'DOWN') {
@@ -200,7 +270,7 @@ function update() {
     }
   }
 
-  bubbles.anims.play('bubble', true);
+  //bubbles.anims.play('bubble', true);
   if (direction !== 'DOWN') {
     if (velocity < -300) {
       player.anims.play('fast-swim', true);
@@ -216,7 +286,7 @@ function update() {
     }
     player.angle = -105;
   }
-  distance = Math.round((player.y - 40) / 50);
+  distance = Math.round(player.y / 40);
   distanceText.text = `${distance}m`;
 
   if (distance > maxDepth) {
@@ -240,18 +310,17 @@ function update() {
     }
   }
 
-  speedText.text = `${velocity}`;
-
   //check air boost
   if (distance >= airLimit && !hasAirBoost) {
     hasAirBoost = true;
     airLimit += 5;
   }
-  if (player.y - 40 === 0) {
+  if (player.y < 40) {
     if (hasAirBoost) {
       airCapacity += 200;
       hasAirBoost = false;
     }
+    player.y = 40;
     air = airCapacity;
     highScoreText.text = `record: ${maxDepth}m`;
     direction = 'DOWN';
